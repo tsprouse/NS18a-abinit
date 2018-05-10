@@ -1,8 +1,5 @@
-
 from util import phase, hat
 
-beta = 1.0 # oscillator length
-m = 1.0 # mass (...?)
 
 def rme_bdag(n1, l1, n2, l2):
     N1 = 2*n1+l1
@@ -27,7 +24,7 @@ def rme_b(n1,l1,n2,l2):
     return res
 
 def tke(n1,l1,n2,l2):
-    res = 0.5*1./(2.*m*beta**2.0) / hat(l1)**2
+    res = 2.5 / hat(l1)**2
     bdbd = 0.
     bbd  = 0.
     bb   = 0.

@@ -60,9 +60,9 @@ class deuteron:
 
         res = 0.0
 
-        if x1==y1 and y2[2:5]==x2[2:5]:
+        if x1==y1 and y2[1:5]==x2[1:5]:
             res+=kinematic.tke(x2[0],x2[1],y2[0],y2[1])
-        if x2==y2 and y1[2:5]==x1[2:5]:
+        if x2==y2 and y1[1:5]==x1[1:5]:
             res+=kinematic.tke(x1[0],x1[1],y1[0],y1[1])
 
         return res
