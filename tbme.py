@@ -4,6 +4,7 @@ w=0.0 # oscillator freq. (don't know value, so I can't do this yet!)
 m=0.0 # mass of nucleon (unknown units, so I can't do this yet!)
 
 import kinematic
+import numpy as np
 
 spnum = []
 invspnum = dict()
@@ -66,6 +67,11 @@ class deuteron:
 
         return res
 
+    def solve(self):
+        eigval,eigvec = np.linalg.eigh(np.array(self.tbme))
+        for e in eigval:
+            print e
 
 
 b=deuteron(3)
+b.solve()
