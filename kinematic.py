@@ -2,33 +2,33 @@ from util import phase, hat
 
 
 def rme_bdag(n1, l1, n2, l2):
-    if abs(l2-l1) > 1:
+    if abs(l2-l1) != 1:
         return 0.
     N1 = 2*n1+l1
     N2 = 2*n2+l2
     if N1==N2+1 and l1==l2+1:
-        res =  1/hat(l2+1)*((l2+1.)*(N2+l2+3.))**0.5
+        res =  ((l2+1.)*(N2+l2+3.))**0.5
     elif N1==N2+1 and l1==l2-1:
-        res =  1/hat(l2-1)*((l2*(N2-l2+2.)))**0.5
+        res =  ((l2*(N2-l2+2.)))**0.5
     else:
         res = 0.0
     return res
 
 def rme_b(n1,l1,n2,l2):
-    if abs(l2-l1) > 1:
+    if abs(l2-l1) != 1:
         return 0.
     N1 = 2*n1+l1
     N2 = 2*n2+l2
     if N1==N2-1 and l1==l2+1:
-        res =  1/hat(l2+1)*((l2+1.)*(N2-l2))**0.5
+        res =  ((l2+1.)*(N2-l2))**0.5
     elif N1==N2-1 and l1==l2-1:
-        res =  1/hat(l2-1)*((l2*(N2+l2+1.)))**0.5
+        res =  ((l2*(N2+l2+1.)))**0.5
     else:
         res = 0.0
     return res
 
 def tkrme(n1,l1,n2,l2):
-    res = -2.5 # / hat(l)
+    res = -2.5 / hat(l1)
     bdbd = 0.
     bbd  = 0.
     bb   = 0.
