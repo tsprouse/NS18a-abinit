@@ -4,7 +4,7 @@ ftbme='nucleitwobody.dat'
 import kinematic
 import numpy as np
 from util import hat
-
+import copy
 
 class sp_state:
     def __init__(self):
@@ -64,7 +64,7 @@ class nb_state:
                     self.phase = self.phase*((-1)**i)
                     return
             self.spec.append(ind)
-            self.phase = self.phase*((-1)**(len(self.spec)))
+            self.phase = self.phase*((-1)**(len(self.spec)-1))
     def fix(self):
         self.null = False
         self.phase = 1
@@ -79,7 +79,7 @@ def ip(bra,ket):
     if bra.null or ket.null:
         return 0.0
     elif bra.spec == ket.spec:
-        return 1.*bra.phase*ket.phase
+        return bra.phase*ket.phase
     else:
         return 0.0
 
@@ -87,12 +87,13 @@ class nb_basis:
     def __init__(self, sp):
         self.spec = list()
         self.sp = sp
-    def build(self,z,a,nmax,m):
+    def build(self,z,a,nmax,m,p):
         print "Building basis"
         self.z = z
         self.a = a
         self.nmax = nmax
         self.m = m
+        self.p = p
         g = gen(len(self.sp.spec),a)
         pf = True
         self.rep = set()
@@ -110,7 +111,6 @@ class nb_basis:
 
         print len(self.spec)
         print len(self.rep)
-        exit()
 
     def check(self,tup):
         m = 0
@@ -121,7 +121,7 @@ class nb_basis:
             n+=self.sp.spec[x].N
             if self.sp.spec[x].tz<0:
                 z+=1
-        if m==self.m and n <= self.nmax and z==self.z and n%2==0:
+        if m==self.m and n <= self.nmax and z==self.z and n%2==self.p:
             # for x in tup: print self.sp.spec[x].n, self.sp.spec[x].l,self.sp.spec[x].j, self.sp.spec[x].m, self.sp.spec[x].N
             # print ''
             return True
@@ -157,6 +157,7 @@ class tbint:
             val  = float(l.split()[4])
             self.spec[(bra1,bra2,ket1,ket2)] = val
 
+
 class hamiltonian:
 
     def __init__(self,bas,v):
@@ -168,8 +169,8 @@ class hamiltonian:
         print "Adding interaction terms"
         for xx in xrange(len(self.basis.spec)):
             for yy in xrange(len(self.basis.spec)):
-                x = self.basis.spec[xx]
-                y = self.basis.spec[yy]
+                x = copy.deepcopy(self.basis.spec[xx])
+                y = copy.deepcopy(self.basis.spec[yy])
                 diff = x.rep.difference(y.rep)
                 if len(diff)<=2:
                     for a in x.rep:
@@ -183,11 +184,12 @@ class hamiltonian:
                                         y.adag(a)
                                         self.spec[xx][yy]+=ip(y,x)*0.25*self.v.spec[(a,b,g,d)]
                                         y.reset()
+                                        x.reset()
         print "Adding Kinetic terms"
         for xx in xrange(len(self.basis.spec)):
             for yy in xrange(len(self.basis.spec)):
-                x = self.basis.spec[xx]
-                y = self.basis.spec[yy]
+                x = copy.deepcopy(self.basis.spec[xx])
+                y = copy.deepcopy(self.basis.spec[yy])
                 diff = x.rep.difference(y.rep)
                 if len(diff)<=1:
                     for a in x.rep:
@@ -196,23 +198,34 @@ class hamiltonian:
                             y.adag(a)
                             self.spec[xx][yy]+=ip(y,x)*KinMatEl(self.basis.sp.spec[a],self.basis.sp.spec[b])
                             y.reset()
+                            x.reset()
+        np.savetxt('matrix_abinit.txt', self.spec)
         print "Solving"
         self.eigval,self.eigvec = np.linalg.eigh(np.array(self.spec))
-        print self.eigval
+        print "GS binding energy of nucleus Z=%d A=%d: %f MeV" % (self.basis.z,self.basis.a,self.eigval[0])
+        for x in self.eigval[1:]:
+            if x < 0:
+                print "Excited state at energy %f MeV" % (x)
         # for i in xrange(len(self.basis.spec)):
         #     print self.spec[i][i], self.basis.spec[i]
 
 
 def KinMatEl(bra,ket):
     if bra.j==ket.j and bra.m==ket.m and bra.tz==ket.tz and bra.l == ket.l:
-        return 1./hat(ket.l)*kinematic.tkrme(bra.n,bra.l,ket.n,ket.l)
+        return 1./hat(ket.j)*kinematic.tkrme(bra.n,bra.l,ket.n,ket.l)
     else:
         return 0.0
 
 
 this = spnum()
 that = nb_basis(this)
-that.build(2,4,2,0)
+that.build(2,4,3,0,0)
+these = tbint()
+those = hamiltonian(that,these)
+
+this = spnum()
+that = nb_basis(this)
+that.build(1,2,3,0,0)
 these = tbint()
 those = hamiltonian(that,these)
 
