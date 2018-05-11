@@ -3,14 +3,15 @@ ftbme='nucleitwobody.dat'
 
 import kinematic
 import numpy as np
+from util import hat
 
 
 class sp_state:
     def __init__(self):
         self.n = 0
         self.N = 0
-        self.j = 0
         self.m = 0
+        self.j = 0
         self.l = 0
         self.tz = 0
 
@@ -87,19 +88,29 @@ class nb_basis:
         self.spec = list()
         self.sp = sp
     def build(self,z,a,nmax,m):
+        print "Building basis"
         self.z = z
         self.a = a
         self.nmax = nmax
         self.m = m
         g = gen(len(self.sp.spec),a)
         pf = True
+        self.rep = set()
         while pf:
-            if self.check(g.vec):
+            ts = (frozenset(g.vec))
+            if len(ts) == self.a: self.rep.add(ts)
+            pf = g.nxt()
+
+        for r in self.rep:
+            if self.check(r):
                 nb = nb_state()
-                for x in g.vec: nb.adag(x)
+                for x in r: nb.adag(x)
                 nb.fix()
                 self.spec.append(nb)
-            pf = g.nxt()
+
+        print len(self.spec)
+        print len(self.rep)
+        exit()
 
     def check(self,tup):
         m = 0
@@ -108,9 +119,11 @@ class nb_basis:
         for x in tup:
             m+=self.sp.spec[x].m
             n+=self.sp.spec[x].N
-            if self.sp.spec[x].tz>0:
+            if self.sp.spec[x].tz<0:
                 z+=1
-        if m==self.m and n == self.nmax and z==self.z:
+        if m==self.m and n <= self.nmax and z==self.z and n%2==0:
+            # for x in tup: print self.sp.spec[x].n, self.sp.spec[x].l,self.sp.spec[x].j, self.sp.spec[x].m, self.sp.spec[x].N
+            # print ''
             return True
         else:
             return False
@@ -124,7 +137,7 @@ class gen:
         for x in xrange(self.a):
             if self.vec[x] < self.splen-1:
                 self.vec[x] = self.vec[x]+1
-                if x == self.a-1: print self.vec[x]
+                # print self.vec
                 return True
             else:
                 self.vec[x] = 0
@@ -133,6 +146,7 @@ class gen:
 
 class tbint:
     def __init__(self):
+        print "Reading interaction table"
         self.spec=dict()
         f = open(ftbme)
         for l in f:
@@ -151,6 +165,7 @@ class hamiltonian:
 
         self.spec = [[0.0 for x in xrange(len(self.basis.spec))] for x in xrange(len(self.basis.spec))]
 
+        print "Adding interaction terms"
         for xx in xrange(len(self.basis.spec)):
             for yy in xrange(len(self.basis.spec)):
                 x = self.basis.spec[xx]
@@ -168,6 +183,7 @@ class hamiltonian:
                                         y.adag(a)
                                         self.spec[xx][yy]+=ip(y,x)*0.25*self.v.spec[(a,b,g,d)]
                                         y.reset()
+        print "Adding Kinetic terms"
         for xx in xrange(len(self.basis.spec)):
             for yy in xrange(len(self.basis.spec)):
                 x = self.basis.spec[xx]
@@ -178,17 +194,25 @@ class hamiltonian:
                         for b in y.rep:
                             y.a(b)
                             y.adag(a)
-                            self.spec[xx][yy]+=ip(y,x)*KinMatEl(self.basis.sp[a],self.basis.sp[b])
+                            self.spec[xx][yy]+=ip(y,x)*KinMatEl(self.basis.sp.spec[a],self.basis.sp.spec[b])
                             y.reset()
+        print "Solving"
+        self.eigval,self.eigvec = np.linalg.eigh(np.array(self.spec))
+        print self.eigval
+        # for i in xrange(len(self.basis.spec)):
+        #     print self.spec[i][i], self.basis.spec[i]
+
 
 def KinMatEl(bra,ket):
-    if bra.j==ket.j and bra.m==ket.m and bra.tz==ket.tz:
-        return kinematic.tke()
+    if bra.j==ket.j and bra.m==ket.m and bra.tz==ket.tz and bra.l == ket.l:
+        return 1./hat(ket.l)*kinematic.tkrme(bra.n,bra.l,ket.n,ket.l)
+    else:
+        return 0.0
 
 
 this = spnum()
 that = nb_basis(this)
-that.build(2,4,3,0)
+that.build(2,4,2,0)
 these = tbint()
 those = hamiltonian(that,these)
 
